@@ -15,6 +15,7 @@
 		D580CC932026FA600099AAA5 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D580CC912026FA600099AAA5 /* Main.storyboard */; };
 		D580CC952026FA610099AAA5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D580CC942026FA610099AAA5 /* Assets.xcassets */; };
 		D580CC982026FA610099AAA5 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D580CC962026FA610099AAA5 /* LaunchScreen.storyboard */; };
+		D580CCA02027052C0099AAA5 /* MainScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = D580CC9F2027052C0099AAA5 /* MainScene.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +29,7 @@
 		D580CC942026FA610099AAA5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D580CC972026FA610099AAA5 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		D580CC992026FA610099AAA5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D580CC9F2027052C0099AAA5 /* MainScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainScene.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,6 +66,7 @@
 				D580CC892026FA600099AAA5 /* GameScene.sks */,
 				D580CC8B2026FA600099AAA5 /* Actions.sks */,
 				D580CC8D2026FA600099AAA5 /* GameScene.swift */,
+				D580CC9F2027052C0099AAA5 /* MainScene.swift */,
 				D580CC8F2026FA600099AAA5 /* GameViewController.swift */,
 				D580CC912026FA600099AAA5 /* Main.storyboard */,
 				D580CC942026FA610099AAA5 /* Assets.xcassets */,
@@ -147,6 +150,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D580CC8E2026FA600099AAA5 /* GameScene.swift in Sources */,
+				D580CCA02027052C0099AAA5 /* MainScene.swift in Sources */,
 				D580CC902026FA600099AAA5 /* GameViewController.swift in Sources */,
 				D580CC882026FA600099AAA5 /* AppDelegate.swift in Sources */,
 			);
