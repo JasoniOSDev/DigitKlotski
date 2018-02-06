@@ -15,15 +15,31 @@ enum GameStatus : Int{
     case Stop
 }
 
+enum GameMode : Int {
+    case Mode3x3 = 3
+    case Mode4x4 = 4
+    case Mode5x5 = 5
+}
+
 class MainScene: SKScene {
 
     private var mapNode: SKSpriteNode!
     private var timeLabel: SKLabelNode!
     private var operationButton: SKLabelNode!
     private var backgroundNode: SKSpriteNode!
+    private var numBlockNodes: Array<GameBlockNode>! = Array<GameBlockNode>()
+    private var emptyNodes: GameBlockNode!
+    
+    private var blockPadding: CGFloat = 0
+    private var blockWidth: CGFloat = 0
+    private var blockHalfWidth: CGFloat = 0
+    private var blockBorderPadding: CGFloat = 0
+    private var blockNum: Int = 0
+    
     var lastTime: TimeInterval = 0
     var pastTime: TimeInterval = 0
     var gameStatus: GameStatus = .UnStart
+    var gameMode: GameMode = .Mode3x3
 
     override func sceneDidLoad() {
         super.sceneDidLoad()
@@ -40,14 +56,64 @@ class MainScene: SKScene {
         if let operationButton = self.backgroundNode.childNode(withName: "operation_button") as? SKLabelNode {
             self.operationButton = operationButton
         }
+        self.initUI()
+        self.createComponent()
         self.refreshUI()
     }
     
-    func refreshUI() {
-        let width = self.frame.width + self.frame.minX
-        let mapWidth = width - 20
-        self.mapNode.size = CGSize(width: mapWidth / self.frame.width * 100, height: mapWidth / self.frame.height * 100)
-        self.mapNode.position = CGPoint(x: self.frame.midX, y: self.mapNode.position.y)
+    private func initUI() {
+        let width = self.backgroundNode.size.width
+        let mapWidth = width - 40
+        self.mapNode.size = CGSize(width: mapWidth, height: mapWidth)
+        self.initBlockUIConfig()
+    }
+    
+    private func refreshUI() {
+        self.refresBlocks()
+    }
+    
+    private func initBlockUIConfig() {
+        self.blockPadding = ceil(4.0 / 375.0 * self.mapNode.size.width)
+        self.blockWidth = floor((self.mapNode.size.width - blockPadding * CGFloat(self.gameMode.rawValue + 1)) / CGFloat(self.gameMode.rawValue))
+        self.blockHalfWidth = floor(self.blockWidth / 2)
+        self.blockBorderPadding = ceil(self.blockPadding + self.blockHalfWidth)
+        self.blockNum = self.gameMode.rawValue * self.gameMode.rawValue
+    }
+    
+    private func refresBlocks() {
+        let blockWidth = self.blockWidth
+        let halfBlockWidth = self.blockHalfWidth
+        let blockBorderPadding = self.blockBorderPadding;
+        var blockPosition = CGPoint(x: -ceil(self.mapNode.size.width / 2), y: self.mapNode.size.height / 2);
+        let blockSize = CGSize(width: blockWidth, height: blockWidth)
+        blockPosition.x += blockBorderPadding;
+        blockPosition.y -= blockBorderPadding;
+        if (self.numBlockNodes.count > 1) {
+            for i in 0 ..< self.numBlockNodes.count{
+                let block = self.numBlockNodes[i]
+                block.size = blockSize
+                block.position = blockPosition
+                if (i + 1) % self.gameMode.rawValue == 0 {
+                    blockPosition = CGPoint(x: -self.mapNode.size.width / 2 + blockBorderPadding, y: blockPosition.y - blockBorderPadding - halfBlockWidth)
+                } else {
+                    blockPosition.x += blockBorderPadding + halfBlockWidth
+                }
+            }
+        }
+    }
+    
+    private func createComponent() {
+        let blockNum = self.blockNum
+        let blockWidth = self.blockWidth
+        let blockSize = CGSize(width: blockWidth, height: blockWidth)
+        for i in 1...blockNum {
+            let block = GameBlockNode(color: .gray, size:blockSize, digit: i)
+            self.mapNode.addChild(block)
+            self.numBlockNodes.append(block)
+            block.positionIndex = i
+        }
+        self.emptyNodes = self.numBlockNodes.last!
+        self.emptyNodes.type = .Empty
     }
     
     override func update(_ currentTime: TimeInterval) {
@@ -67,6 +133,9 @@ class MainScene: SKScene {
             if self.operationButton.contains(location) {
                 self.operationButtonClicked()
             }
+            if self.checkValidBlockTouch(with: touch) {
+                return
+            }
         }
     }
     
@@ -85,6 +154,43 @@ class MainScene: SKScene {
             self.updateGameStatus(new: .Pause)
             self.gamePause()
         }
+    }
+    
+    func checkValidBlockTouch(with touch: UITouch) -> Bool {
+        if (self.gameStatus != .Playing) {
+            return false
+        }
+        let location = touch.location(in: self.mapNode)
+        for block in self.numBlockNodes {
+            if block.contains(location) {
+                if self.checkBlockCanMove(block: block) {
+                    self.blockClicked(at: block)
+                    return true
+                }
+            }
+        }
+        return false
+    }
+    
+    func checkBlockCanMove(block: GameBlockNode) -> Bool {
+        let emptyNodeIndex = self.emptyNodes.positionIndex
+        let curIndex = block.positionIndex
+        let diff = abs(curIndex - emptyNodeIndex)
+        if (diff == 1 || diff == self.gameMode.rawValue) {
+            return true
+        }
+        return false
+    }
+    
+    func blockClicked(at block: GameBlockNode) {
+        let targetPosition = self.emptyNodes.position
+        let emptyNodeTargetPosition = block.position
+        let targetIndex = self.emptyNodes.positionIndex
+        let emptyNodeIndex = block.positionIndex
+        self.emptyNodes.positionIndex = emptyNodeIndex
+        block.positionIndex = targetIndex
+        block.run(SKAction.move(to: targetPosition, duration: 0.1))
+        self.emptyNodes.position = emptyNodeTargetPosition
     }
     
     func updateGameStatus(new gameStatus:GameStatus) {
@@ -111,6 +217,54 @@ class MainScene: SKScene {
     
     func gameStart() {
         self.lastTime = CACurrentMediaTime()
+        self.updateBlockPosition()
+    }
+    
+    func updateBlockPosition() {
+        self.numBlockNodes = self.numBlockNodes.sorted{ return $0.digit < $1.digit }
+        var positionArrayTmp: Array<Int> = Array()
+        for i in 1...self.numBlockNodes.count {
+            positionArrayTmp.append(i)
+        }
+        var finalPositionArray: Array<Int> = Array()
+        for _ in 1...self.numBlockNodes.count {
+            let randomIndex:Int = Int(arc4random() % UInt32(positionArrayTmp.count))
+            if (randomIndex < positionArrayTmp.count) {
+                let position = positionArrayTmp[randomIndex]
+                positionArrayTmp.remove(at: randomIndex)
+                finalPositionArray.append(position)
+            }
+        }
+        if (finalPositionArray.count > 0) {
+            for i in 0 ..< finalPositionArray.count {
+                let position = finalPositionArray[i]
+                let block = self.numBlockNodes[i]
+                block.positionIndex = position
+            }
+        }
+        self.updateBlockPositionUI()
+    }
+    
+    func updateBlockPositionUI() {
+        for block in self.numBlockNodes {
+            let position = self.targetPointWithPosition(at: block.positionIndex)
+            self.moveAnimation(with: block, to: position)
+        }
+    }
+    
+    func moveAnimation(with block: SKNode, to position: CGPoint) {
+        block.run(SKAction.move(to: position, duration: 0.25))
+    }
+    
+    func targetPointWithPosition(at index: Int) -> CGPoint {
+        var position = CGPoint(x: -self.mapNode.size.width / 2 + self.blockBorderPadding, y: self.mapNode.size.height / 2 - self.blockBorderPadding)
+        let yIndex = CGFloat(index / self.gameMode.rawValue) + (index % self.gameMode.rawValue == 0 ? 0 : 1)
+        let xIndex = CGFloat(index - Int(yIndex - 1) * self.gameMode.rawValue)
+        let xOffset = (xIndex - 1) * (self.blockWidth + self.blockPadding)
+        let yOffset = (yIndex - 1) * (self.blockWidth + self.blockPadding)
+        position.x += xOffset
+        position.y -= yOffset
+        return position
     }
     
     func gameContinue() {
